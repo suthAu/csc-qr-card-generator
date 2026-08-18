@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CSC Customer QR Card Generator</title>
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #1f2937;
+      background: #f3f4f6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 28px 18px; }
+    .app { max-width: 900px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    .intro { margin: 0 0 24px; color: #4b5563; line-height: 1.5; }
+    .panel {
+      background: white;
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 3px 16px rgba(0,0,0,.08);
+      margin-bottom: 22px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .contact-id-field { grid-column: 1 / -1; }
+    label { display: block; font-weight: 650; margin-bottom: 7px; }
+    input {
+      width: 100%;
+      font-size: 18px;
+      padding: 12px 13px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+    }
+    input:focus { outline: 3px solid rgba(59,130,246,.18); border-color: #3b82f6; }
+    .hint { font-size: 13px; color: #6b7280; margin-top: 6px; }
+    .buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 12px 18px;
+      font-size: 17px;
+      font-weight: 650;
+      cursor: pointer;
+      background: #111827;
+      color: white;
+    }
+    button.secondary { background: #e5e7eb; color: #111827; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .message { min-height: 24px; margin-top: 14px; font-weight: 600; }
+    .error { color: #b91c1c; }
+    .success { color: #166534; }
+    .preview-title { margin: 0 0 14px; font-size: 19px; }
+    .preview-wrap { display: flex; justify-content: center; }
+    .customer-card {
+      width: 105mm;
+      min-height: 75mm;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 4mm;
+      padding: 7mm;
+      display: grid;
+      grid-template-columns: 1fr 48mm;
+      grid-template-rows: auto 1fr auto;
+      column-gap: 8mm;
+      row-gap: 3mm;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    .card-logo {
+      grid-column: 1;
+      grid-row: 1;
+      width: 26mm;
+      height: 26mm;
+      object-fit: contain;
+      display: block;
+    }
+    .first-name {
+      grid-column: 1;
+      grid-row: 2;
+      align-self: end;
+      font-size: 21px;
+      line-height: 1.12;
+      font-weight: 750;
+      overflow-wrap: anywhere;
+    }
+    .last-name {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      font-size: 20px;
+      line-height: 1.1;
+      font-weight: 750;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      hyphens: manual;
+      padding-right: 2mm;
+    }
+    .qr-shell {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      width: 48mm;
+      height: 48mm;
+      padding: 4mm;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: start;
+    }
+    #qrcode img, #qrcode canvas { display: block; width: 40mm !important; height: 40mm !important; }
+    .placeholder { color: #9ca3af; }
+    .privacy-note { margin-top: 18px; font-size: 13px; color: #6b7280; line-height: 1.45; }
+
+    @media (max-width: 680px) {
+      body { padding: 16px 10px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .customer-card { width: 100%; min-height: 0; }
+      .card-logo { width: 23mm; height: 23mm; }
+      .first-name { font-size: 19px; }
+      .last-name { font-size: 18px; }
+    }
+
+    @media print {
+      @page { margin: 10mm; }
+      body { background: white; padding: 0; }
+      .no-print { display: none !important; }
+      .app { max-width: none; margin: 0; }
+      .panel { box-shadow: none; padding: 0; margin: 0; }
+      .preview-title { display: none; }
+      .preview-wrap { justify-content: flex-start; }
+      .customer-card { box-shadow: none; border: 1px solid #aaa; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="no-print">
+      <h1>CSC Customer QR Card Generator</h1>
+      <p class="intro">Enter the customer's first name, last name and Salesforce Contact ID. The QR code contains the Contact ID only.</p>
+    </section>
+
+    <section class="panel no-print">
+      <div class="form-grid">
+        <div>
+          <label for="firstName">First name</label>
+          <input id="firstName" type="text" autocomplete="off" placeholder="e.g. Mary" />
+          <div class="hint">Include preferred names or multiple given names here if required.</div>
+        </div>
+        <div>
+          <label for="lastName">Last name</label>
+          <input id="lastName" type="text" autocomplete="off" placeholder="e.g. Smith" />
+        </div>
+        <div class="contact-id-field">
+          <label for="contactId">Salesforce Contact ID</label>
+          <input id="contactId" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="15- or 18-character ID" />
+          <div class="hint">A 15-character Salesforce ID will automatically be converted to 18 characters.</div>
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="createBtn" type="button">Create Card</button>
+        <button id="printBtn" class="secondary" type="button" disabled>Print Card</button>
+        <button id="clearBtn" class="secondary" type="button">Clear</button>
+      </div>
+      <div id="message" class="message" aria-live="polite"></div>
+      <div class="privacy-note">This page does not save customer details. When hosted as a static site, the name and Contact ID are processed in the browser only.</div>
+    </section>
+
+    <section class="panel" id="printArea">
+      <h2 class="preview-title no-print">Card preview</h2>
+      <div class="preview-wrap">
+        <div class="customer-card">
+          <img class="card-logo" src="csc-logo.jpg" alt="Canberra Seniors Centre logo" />
+          <div id="firstNameCard" class="first-name placeholder">First Name</div>
+          <div class="qr-shell"><div id="qrcode"></div></div>
+          <div id="lastNameCard" class="last-name placeholder">Last Name</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- QRCode.js: https://github.com/davidshimjs/qrcodejs -->
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <script>
+    const firstName = document.getElementById('firstName');
+    const lastName = document.getElementById('lastName');
+    const contactId = document.getElementById('contactId');
+    const firstNameCard = document.getElementById('firstNameCard');
+    const lastNameCard = document.getElementById('lastNameCard');
+    const qrcode = document.getElementById('qrcode');
+    const message = document.getElementById('message');
+    const printBtn = document.getElementById('printBtn');
+
+    function to18(id15) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ012345';
+      let suffix = '';
+      for (let block = 0; block < 3; block++) {
+        let flags = 0;
+        for (let i = 0; i < 5; i++) {
+          const ch = id15.charAt(block * 5 + i);
+          if (ch >= 'A' && ch <= 'Z') flags += (1 << i);
+        }
+        suffix += chars.charAt(flags);
+      }
+      return id15 + suffix;
+    }
+
+    function normaliseSalesforceId(raw) {
+      const id = raw.trim();
+      if (!/^[A-Za-z0-9]{15}$|^[A-Za-z0-9]{18}$/.test(id)) return null;
+      return id.length === 15 ? to18(id) : id;
+    }
+
+    function setMessage(text, type = '') {
+      message.textContent = text;
+      message.className = 'message' + (type ? ' ' + type : '');
+    }
+
+    function createCard() {
+      const first = firstName.value.trim();
+      const last = lastName.value.trim();
+      const sfId = normaliseSalesforceId(contactId.value);
+
+      if (!first) {
+        setMessage('Enter the first name.', 'error');
+        firstName.focus();
+        return;
+      }
+      if (!last) {
+        setMessage('Enter the last name.', 'error');
+        lastName.focus();
+        return;
+      }
+      if (!sfId) {
+        setMessage('Enter a valid 15- or 18-character Salesforce Contact ID.', 'error');
+        contactId.focus();
+        return;
+      }
+      if (typeof QRCode === 'undefined') {
+        setMessage('The QR generator could not load. Check the internet connection and reload the page.', 'error');
+        return;
+      }
+
+      contactId.value = sfId;
+
+      firstNameCard.textContent = first;
+      lastNameCard.textContent = last;
+      firstNameCard.classList.remove('placeholder');
+      lastNameCard.classList.remove('placeholder');
+      qrcode.innerHTML = '';
+
+      new QRCode(qrcode, {
+        text: sfId,
+        width: 300,
+        height: 300,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      printBtn.disabled = false;
+      setMessage('Card created. Check the name, then print it.', 'success');
+    }
+
+    function clearForm() {
+      firstName.value = '';
+      lastName.value = '';
+      contactId.value = '';
+      firstNameCard.textContent = 'First Name';
+      lastNameCard.textContent = 'Last Name';
+      firstNameCard.classList.add('placeholder');
+      lastNameCard.classList.add('placeholder');
+      qrcode.innerHTML = '';
+      printBtn.disabled = true;
+      setMessage('');
+      firstName.focus();
+    }
+
+    document.getElementById('createBtn').addEventListener('click', createCard);
+    document.getElementById('clearBtn').addEventListener('click', clearForm);
+    printBtn.addEventListener('click', () => window.print());
+
+    [firstName, lastName, contactId].forEach(el => {
+      el.addEventListener('keydown', event => {
+        if (event.key === 'Enter') createCard();
+      });
+    });
+  </script>
+</body>
+</html>
