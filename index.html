@@ -65,9 +65,9 @@
       padding: 7mm;
       display: grid;
       grid-template-columns: 1fr 48mm;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: 48mm auto auto;
       column-gap: 8mm;
-      row-gap: 3mm;
+      row-gap: 2.5mm;
       box-shadow: 0 2px 12px rgba(0,0,0,.08);
     }
     .card-logo {
@@ -77,30 +77,29 @@
       height: 26mm;
       object-fit: contain;
       display: block;
+      align-self: start;
     }
-    .first-name {
-      grid-column: 1;
-      grid-row: 2;
-      align-self: end;
-      font-size: 21px;
-      line-height: 1.12;
-      font-weight: 750;
-      overflow-wrap: anywhere;
-    }
+    .first-name,
     .last-name {
       grid-column: 1 / -1;
-      grid-row: 3;
-      font-size: 20px;
-      line-height: 1.1;
+      width: 100%;
       font-weight: 750;
-      overflow-wrap: anywhere;
-      word-break: normal;
-      hyphens: manual;
-      padding-right: 2mm;
+      line-height: 1.08;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+    .first-name {
+      grid-row: 2;
+      font-size: 24px;
+    }
+    .last-name {
+      grid-row: 3;
+      font-size: 24px;
     }
     .qr-shell {
       grid-column: 2;
-      grid-row: 1 / 3;
+      grid-row: 1;
       width: 48mm;
       height: 48mm;
       padding: 4mm;
@@ -119,8 +118,7 @@
       .form-grid { grid-template-columns: 1fr; }
       .customer-card { width: 100%; min-height: 0; }
       .card-logo { width: 23mm; height: 23mm; }
-      .first-name { font-size: 19px; }
-      .last-name { font-size: 18px; }
+      .card-name { font-size: 21px; }
     }
 
     @media print {
@@ -173,8 +171,8 @@
       <div class="preview-wrap">
         <div class="customer-card">
           <img class="card-logo" src="csc-logo.jpg" alt="Canberra Seniors Centre logo" />
-          <div id="firstNameCard" class="first-name placeholder">First Name</div>
           <div class="qr-shell"><div id="qrcode"></div></div>
+          <div id="firstNameCard" class="first-name placeholder">First Name</div>
           <div id="lastNameCard" class="last-name placeholder">Last Name</div>
         </div>
       </div>
@@ -218,6 +216,23 @@
       message.className = 'message' + (type ? ' ' + type : '');
     }
 
+    function fitNameLine(element, maxFontSize = 24, minFontSize = 12) {
+      element.style.fontSize = maxFontSize + 'px';
+      const availableWidth = element.clientWidth;
+      if (!availableWidth) return;
+
+      let size = maxFontSize;
+      while (element.scrollWidth > availableWidth && size > minFontSize) {
+        size -= 0.5;
+        element.style.fontSize = size + 'px';
+      }
+    }
+
+    function fitCardNames() {
+      fitNameLine(firstNameCard);
+      fitNameLine(lastNameCard);
+    }
+
     function createCard() {
       const first = firstName.value.trim();
       const last = lastName.value.trim();
@@ -249,6 +264,11 @@
       lastNameCard.textContent = last;
       firstNameCard.classList.remove('placeholder');
       lastNameCard.classList.remove('placeholder');
+
+      firstNameCard.style.fontSize = '';
+      lastNameCard.style.fontSize = '';
+      requestAnimationFrame(fitCardNames);
+
       qrcode.innerHTML = '';
 
       new QRCode(qrcode, {
@@ -270,6 +290,8 @@
       lastNameCard.textContent = 'Last Name';
       firstNameCard.classList.add('placeholder');
       lastNameCard.classList.add('placeholder');
+      firstNameCard.style.fontSize = '';
+      lastNameCard.style.fontSize = '';
       qrcode.innerHTML = '';
       printBtn.disabled = true;
       setMessage('');
@@ -279,6 +301,7 @@
     document.getElementById('createBtn').addEventListener('click', createCard);
     document.getElementById('clearBtn').addEventListener('click', clearForm);
     printBtn.addEventListener('click', () => window.print());
+    window.addEventListener('resize', fitCardNames);
 
     [firstName, lastName, contactId].forEach(el => {
       el.addEventListener('keydown', event => {
