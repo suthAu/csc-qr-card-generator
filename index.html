@@ -65,7 +65,7 @@
       padding: 7mm;
       display: grid;
       grid-template-columns: 1fr 48mm;
-      grid-template-rows: 48mm auto auto;
+      grid-template-rows: 48mm auto auto auto;
       column-gap: 8mm;
       row-gap: 2.5mm;
       box-shadow: 0 2px 12px rgba(0,0,0,.08);
@@ -96,6 +96,14 @@
     .last-name {
       grid-row: 3;
       font-size: 24px;
+    }
+    .membership-end-date {
+      grid-column: 1 / -1;
+      grid-row: 4;
+      width: 100%;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
     }
     .qr-shell {
       grid-column: 2;
@@ -151,6 +159,10 @@
           <label for="lastName">Last name</label>
           <input id="lastName" type="text" autocomplete="off" placeholder="e.g. Smith" />
         </div>
+        <div>
+          <label for="membershipEndDate">Membership End Date</label>
+          <input id="membershipEndDate" type="date" />
+        </div>
         <div class="contact-id-field">
           <label for="contactId">Salesforce Contact ID</label>
           <input id="contactId" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="15- or 18-character ID" />
@@ -174,6 +186,9 @@
           <div class="qr-shell"><div id="qrcode"></div></div>
           <div id="firstNameCard" class="first-name placeholder">First Name</div>
           <div id="lastNameCard" class="last-name placeholder">Last Name</div>
+          <div id="membershipEndDateCard" class="membership-end-date placeholder">
+                Membership expires: DD/MM/YYYY
+          </div>
         </div>
       </div>
     </section>
@@ -184,12 +199,21 @@
   <script>
     const firstName = document.getElementById('firstName');
     const lastName = document.getElementById('lastName');
+    const membershipEndDate = document.getElementById('membershipEndDate');
     const contactId = document.getElementById('contactId');
     const firstNameCard = document.getElementById('firstNameCard');
     const lastNameCard = document.getElementById('lastNameCard');
+    const membershipEndDateCard = document.getElementById('membershipEndDateCard');
     const qrcode = document.getElementById('qrcode');
     const message = document.getElementById('message');
     const printBtn = document.getElementById('printBtn');
+
+    // Convert date format from 2026-08-28 into the Australian display format 28/08/2026
+    function formatDate(dateValue) {
+      if (!dateValue) return '';
+      const [year, month, day] = dateValue.split('-');
+      return `${day}/${month}/${year}`;
+    }
 
     function to18(id15) {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ012345';
@@ -236,6 +260,7 @@
     function createCard() {
       const first = firstName.value.trim();
       const last = lastName.value.trim();
+      const endDate = membershipEndDate.value;
       const sfId = normaliseSalesforceId(contactId.value);
 
       if (!first) {
@@ -262,8 +287,10 @@
 
       firstNameCard.textContent = first;
       lastNameCard.textContent = last;
+      membershipEndDateCard.textContent = endDate ? `Membership expires: ${formatDate(endDate)}`: '';
       firstNameCard.classList.remove('placeholder');
       lastNameCard.classList.remove('placeholder');
+      membershipEndDateCard.classList.remove('placeholder');
 
       firstNameCard.style.fontSize = '';
       lastNameCard.style.fontSize = '';
@@ -285,11 +312,14 @@
     function clearForm() {
       firstName.value = '';
       lastName.value = '';
+      membershipEndDate.value = '';
       contactId.value = '';
       firstNameCard.textContent = 'First Name';
       lastNameCard.textContent = 'Last Name';
+      membershipEndDateCard.textContent = 'Membership expires: DD/MM/YYYY';
       firstNameCard.classList.add('placeholder');
       lastNameCard.classList.add('placeholder');
+      membershipEndDateCard.classList.add('placeholder');
       firstNameCard.style.fontSize = '';
       lastNameCard.style.fontSize = '';
       qrcode.innerHTML = '';
@@ -303,7 +333,7 @@
     printBtn.addEventListener('click', () => window.print());
     window.addEventListener('resize', fitCardNames);
 
-    [firstName, lastName, contactId].forEach(el => {
+    [firstName, lastName, membershipEndDate, contactId].forEach(el => {
       el.addEventListener('keydown', event => {
         if (event.key === 'Enter') createCard();
       });
